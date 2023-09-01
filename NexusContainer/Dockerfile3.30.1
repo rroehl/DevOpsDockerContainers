@@ -1,0 +1,96 @@
+# Nexus
+# Systemd Build image :     docker build --rm -t "nexus:3.30.1-01" --file Dockerfile3.30.1 .
+# Systemd create and run Container:  docker run -i -d -t -h nexus3.30.1 --name nexus3.30.1 --cap-add=NET_ADMIN --privileged=true -p 8081:8081  nexus:3.30.1-01 /usr/sbin/init
+# Connect to container:    docker exec -it nexus3.30.1 /bin/bash 
+# delete image:      docker image rm nexus:3.30.1-01
+# Start Container: docker container start  nexus3.30.1
+# Stop Container: docker container stop  nexus3.30.1
+# Delete Container: docker container rm  nexus3.30.1
+# Delete image: docker image rm nexus:3.30.1-01 
+
+FROM centos:centos7.9.2009
+ENV container docker
+
+#Employ Systemd for container
+RUN (cd /lib/systemd/system/sysinit.target.wants/; for i in *; do [ $i == \
+systemd-tmpfiles-setup.service ] || rm -f $i; done); \
+rm -f /lib/systemd/system/multi-user.target.wants/*;\
+rm -f /etc/systemd/system/*.wants/*;\
+rm -f /lib/systemd/system/local-fs.target.wants/*; \
+rm -f /lib/systemd/system/sockets.target.wants/*udev*; \
+rm -f /lib/systemd/system/sockets.target.wants/*initctl*; \
+rm -f /lib/systemd/system/basic.target.wants/*;\
+rm -f /lib/systemd/system/anaconda.target.wants/*;
+VOLUME [ "/sys/fs/cgroup" ]
+
+#Configure Server Host Limits
+# Will not work on the container RUN sysctl -w -q vm.max_map_count=262144 && \
+# Will not work on the container RUN sysctl -w -q fs.file-max=65536 && \
+RUN ulimit -n 65536 && \
+ulimit -u 4096 
+
+RUN mkdir /apps
+
+# Install Nexus 
+COPY nexus-3.30.1-01-unix.tar.gz /apps
+
+# Uncompress the file and remove it
+RUN cd /apps && tar -xvf nexus-3.30.1-01-unix.tar.gz && rm -f nexus-3.30.1-01-unix.tar.gz
+
+#Create soft link to Nexus folder
+RUN cd /apps && ln -s nexus-3.30.1-01/ nexus
+
+# Install JDK   hhttps://www.oracle.com/java/technologies/javase/javase-jdk8-downloads.html#license-lightbox
+# Install java and its dependencies
+RUN yum -y install java-1.8.0-openjdk
+# Install the JDK under the apps folder
+COPY jdk-8u291-linux-i586.tar.gz /apps
+RUN cd /apps && tar -xvf jdk-8u291-linux-i586.tar.gz && rm -f jdk-8u291-linux-i586.tar.gz
+
+#Only for NON systemd container copy the run.sh file to the nexus bin location
+#COPY run.sh  /apps/nexus_user/bin
+
+# Configure the nexus.vmoptions
+RUN cd /apps/nexus/bin && \
+sed -ir "0,/^[#]*\s*-XX:LogFile=.*/s//-XX:LogFile=\/apps\/sonatype-work\/nexus3\/log\/jvm.log/" nexus.vmoptions && \
+sed -ir "0,/^[#]*\s*-Dkaraf.data=.*/s//-Dkaraf.data=\/apps\/sonatype-work\/nexus3/" nexus.vmoptions && \
+sed -ir "0,/^[#]*\s*-Dkaraf.log=.*/s//-Dkaraf.log=\/apps\/sonatype-work\/nexus3\/log/" nexus.vmoptions && \
+sed -ir "0,/^[#]*\s*-Djava.io.tmpdir=.*/s//-Djava.io.tmpdir=\/apps\/sonatype-work\/nexus3\/tmp/" nexus.vmoptions 
+
+#  Configure the new Java home 
+RUN cd /apps/nexus/bin && \
+sed -ir "s/^[#]*\s*INSTALL4J_JAVA_HOME_OVERRIDE=.*/INSTALL4J_JAVA_HOME_OVERRIDE=\/apps\/jdk1.8.0_291/" nexus
+
+# Configure the security
+RUN groupadd nexus && useradd -M -s /bin/bash -g nexus -d /apps/nexus nexus_user && \
+    cd /apps && \
+    chown -R nexus_user:nexus ./nexus-3.30.1-01 && \
+    chmod -R u+rwx,g+rwx ./nexus-3.30.1-01  && \
+    chmod -R o-rwx ./nexus-3.30.1-01
+
+# Configure security on the nexus data file
+RUN cd /apps && \
+    chown -R nexus_user:nexus ./sonatype-work && \
+    chmod -R u+rwx,g+rwx ./sonatype-work  && \
+    chmod -R o-rwx ./sonatype-work
+
+# Configure security on the JAVA folder
+RUN cd /apps && \
+    chown -R nexus_user:nexus ./jdk1.8.0_291 && \
+    chmod -R u+rwx,g+rwx ./jdk1.8.0_291  && \
+    chmod -R o-rwx ./jdk1.8.0_291
+
+# Configure nexus.service file  chmod 664 /usr/lib/systemd/system/nexus.service && systemctl enable nexus.service && systemctl daemon-reload
+COPY nexus.service /usr/lib/systemd/system/
+RUN chmod 664 /usr/lib/systemd/system/nexus.service
+RUN systemctl enable nexus.service
+
+# Expose port 8081 on the container
+EXPOSE 8081
+
+#Comand to run on containter start
+#CMD [ "/apps/nexus/nexus start"]
+
+#command to be used with systemd
+CMD ["/usr/sbin/init"] 
+

@@ -1,0 +1,161 @@
+
+• DB Server
+	○ Oracle versions supported 11G and 12G
+	○ Must be configured to support UTF-8 family set  (see NLS_CHARACTERSET)
+	○ Create an empty schema and a sonarqube_DBuser. 
+	○ Grant this {sonarqube_DBuser} permissions to create, update and delete objects for this schema. The charset of the database has to be set to "UTF-8" and the language (database and user) to "English".
+	○ Create an empty schema in Oracle RDS
+
+---
+--Create SonarQube database and user…
+	CREATE DATABASE sonar CHARACTER SET utf8 COLLATE utf8_general_ci;
+	
+	CREATE USER '{sonarqube_DBuser} ' IDENTIFIED BY '{password}';  
+	CREATE USER SONARQUBE IDENTIFIED BY {password};
+
+	GRANT ALL ON sonar.* TO '{sonarqube_DBuser}'@'%' IDENTIFIED BY '{password}';
+	GRANT ALL ON sonar.* TO '{sonarqube_DBuser}'@'%' IDENTIFIED BY '{password}';
+
+	
+	GRANT ALL ON sonar.* TO '{sonarqube_DBuser}'@'localhost' IDENTIFIED BY ''{password}';
+	Also…
+	
+	CREATE USER '{sonarqube_DBuser}'@'localhost' IDENTIFIED BY '{password}';
+	
+	GRANT ALL PRIVILEGES ON sonar . * TO '{sonarqube_DBuser}'@'localhost';
+	
+	FLUSH PRIVILEGES;
+
+--
+
+
+	
+	--Create SonarQube database and user…
+	CREATE DATABASE sonar CHARACTER SET utf8 COLLATE utf8_general_ci;
+	
+	CREATE USER '{sonarqube_DBuser} ' IDENTIFIED BY '{password}';  example CREATE USER SONARQUBE IDENTIFIED BY {password};
+	GRANT ALL ON schema.tables TO '{sonarqube_DBuser}'@'%' IDENTIFIED BY '{password}';  example GRANT ALL PRIVILEGES ON 'SONARQUBE'.* TO 'SONARQUBE'@'localhost';
+
+	GRANT ALL PRIVILEGES TO SONARQUBE;
+
+	--list current DB
+	SELECT * FROM global_name;
+	-- List all users
+	SELECT username FROM all_users ORDER BY username;
+
+	GRANT ALL ON sonar.* TO '{sonarqube_DBuser}'@'localhost' IDENTIFIED BY ''{password}';
+	Also…
+	
+	CREATE USER '{sonarqube_DBuser}'@'localhost' IDENTIFIED BY '{password}';
+	CREATE USER SONARQUBE IDENTIFIED BY "password";
+	
+	GRANT ALL PRIVILEGES ON sonar . * TO '{sonarqube_DBuser}'@'localhost';
+	
+	FLUSH PRIVILEGES;
+	
+			
+			Hi Robb,
+			 
+			The   SONARQUBE (Schema)user is created  in AWS RDS and created  with application schema profile.
+			 
+			It has all permissions on the schema.
+			 
+			The RDS database  NLS_CHARACTERSET  is UTF8.
+			 
+			
+			  Here is the info for the connectivity:
+			 
+			  Server name:  awprdsmpora01.cfuqq3dxlzcz.us-west-2.rds.amazonaws.com
+			  Port :1521
+			  SID(Database name)  : MP
+			  Application Schema; SONARQUBE
+			  Password: sonar_p1?t
+			
+ 
+			 
+			The SONARQUBE user has the following permissions;
+			 
+			PRIVILEGE                   
+			--------------------------- ---
+			CREATE TYPE                 
+			CREATE SESSION             
+			CREATE ROLE                 
+			CREATE DATABASE LINK        
+			CREATE TABLE                
+			ALTER SESSION               
+			CREATE SEQUENCE             
+			CREATE SYNONYM              
+			CREATE TRIGGER              
+			CREATE PROCEDURE            
+			CREATE VIEW                 
+			 
+			 
+					We can’t grant GRANT ALL PRIVILEGES ON sonar . * TO '{sonarqube_DBuser}'@'localhost'; on RDS.
+					 
+					 
+			If any question or concern, please let me know.
+			 
+			Thanks & Regards
+			Gurmel
+	
+	
+	○ Potential issues
+	
+Failed to start SonarQube with Oracle due to bad USERS table structure
+	When another(s) USERS table exists in the Oracle DB, if the sonarqube user has read access on this other USERS table, the SonarQube web server can't start and an exception like the following one is thrown:
+
+	ActiveRecord::ActiveRecordError: ORA-00904: "TOTO": invalid identifier
+	: INSERT INTO users (login, name, email, crypted_password, salt, 
+	created_at, updated_at, remember_token, remember_token_expires_at, toto, id)
+	VALUES('admin', 'Administrator', '', 'bba4c8a0f808f9798cf8b1c153a4bb4f9178cf59', '2519754f77ea67e5d7211cd1414698f465aacebb',
+	TIMESTAMP'2011-06-24 22:09:14', TIMESTAMP'2011-06-24 22:09:14', null, null, null, ?)
+	ActiveRecord::ActiveRecordError: ORA-00904: "TOTO": invalid identifier
+	 
+	: INSERT INTO users (login, name, email, crypted_password, salt, 
+	created_at, updated_at, remember_token, remember_token_expires_at, toto, id)
+	VALUES('admin', 'Administrator', '', 'bba4c8a0f808f9798cf8b1c153a4bb4f9178cf59', 
+	'2519754f77ea67e5d7211cd1414698f465aacebb', TIMESTAMP'2011-06-24 22:09:14', TIMESTAMP'2011-06-24 22:09:14', null, null, null, ?)
+	
+	To fix this issue, the rights of the sonarqube Oracle user must be decreased to remove read access on the other USERS table(s)
+	
+**********IGNORE MYSQL Install
+
+		--Coonfigure MySql
+		mysql -u root -p
+		
+		Create SonarQube database and user.
+Command: mysql -u root -p < create_database.sql
+		
+		-- Create the sonar DB
+CREATE DATABASE sonar CHARACTER SET utf8 COLLATE utf8_general_ci;
+CREATE USER 'sonar' IDENTIFIED BY 'sonar';
+GRANT ALL ON sonar.* TO 'sonar'@'%' IDENTIFIED BY 'sonar';
+GRANT ALL ON sonar.* TO 'sonar'@'localhost' IDENTIFIED BY 'sonar';
+		Also...
+		CREATE USER 'sonar'@'localhost' IDENTIFIED BY 'password';
+		GRANT ALL PRIVILEGES ON sonar . * TO 'sonar'@'localhost';
+		FLUSH PRIVILEGES;
+
+
+		Plugins
+		Current plugins
+ 
+drwxrwx---. 2 root           sonarqube     4096 Nov 29  2019 .
+drwxrwx---. 5 root           sonarqube     4096 Oct 26  2018 ..
+-rw-r--r--. 1 sonarqube_user sonarqube 11686367 Nov 29  2019 checkstyle-sonar-plugin-4.26.jar
+-rw-r--r--. 1 robb           ssh_users  3598615 May 24  2017 qualinsight-sonarqube-smell-plugin-4.0.0.jar
+-rwxrwx---. 1 root           sonarqube       92 Aug  6  2018 README.txt
+-rw-r--r--. 1 robb           ssh_users  2488257 May  8  2018 sonar-cobertura-plugin-2.0.jar
+-rw-r--r--. 1 sonarqube_user sonarqube  4094975 Nov 29  2019 sonar-csharp-plugin-7.15.0.8572.jar
+-rw-r--r--. 1 robb           ssh_users 15356333 Jun 23  2018 sonar-cxx-plugin-1.1.0.jar
+-rw-r--r--. 1 robb           ssh_users   500145 Aug 17  2018 sonar-dependency-check-plugin-1.1.1.jar
+-rw-r--r--. 1 sonarqube_user sonarqube 15248170 Nov 29  2019 sonar-groovy-plugin-1.6.jar
+-rw-r--r--. 1 robb           ssh_users  1726692 Aug 27  2018 sonar-html-plugin-3.0.1.1444.jar
+-rw-r--r--. 1 sonarqube_user sonarqube  8302745 Nov 29  2019 sonar-java-plugin-5.13.1.18282.jar
+-rw-r--r--. 1 sonarqube_user sonarqube  6866969 Nov 29  2019 sonar-javascript-plugin-5.2.1.7778.jar
+-rw-r--r--. 1 sonarqube_user sonarqube   101941 Oct 26  2018 sonar-jdepend-plugin-1.1.1.jar
+-rw-r--r--. 1 sonarqube_user sonarqube   300503 Oct 26  2018 sonar-ldap-plugin-2.2.0.608.jar
+-rw-r--r--. 1 sonarqube_user sonarqube  4730004 Nov 29  2019 sonar-php-plugin-3.0.0.4537.jar
+-rw-r--r--. 1 sonarqube_user sonarqube  2752167 Nov 29  2019 sonar-python-plugin-1.14.1.3143.jar
+-rw-r--r--. 1 sonarqube_user sonarqube  3580236 Nov 29  2019 sonar-vbnet-plugin-7.15.0.8572.jar
+-rw-r--r--. 1 sonarqube_user sonarqube  2242738 Nov 29  2019 sonar-xml-plugin-2.0.1.2020.jar

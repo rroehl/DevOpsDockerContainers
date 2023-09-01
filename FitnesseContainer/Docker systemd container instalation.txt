@@ -1,0 +1,45 @@
+#Create Docker Centos 7.9 container of Fitnesse to run unsder Systemd
+docker run -d -t -h slave -p 8080:80 --name slave --cap-add=NET_ADMIN --privileged=true centos:centos7.9.2009 /usr/sbin/init
+docker exec -it fitnesse /bin/bash 
+
+Fitness_standalone.jar release 20200501    http://fitnesse.org/FitNesseDownload
+Fitnesse Parameters http://fitnesse.org/FitNesse.UserGuide.AdministeringFitNesse.CommandLineArguments
+	
+# Put the systemd file here 
+Download from site    http://www.fitnesse.org/FitNesseDownload   to ~/downloads
+
+
+	#install open JDK 
+    yum install java-1.8.0-openjdk
+
+	#Create folders
+	mkdir  /apps && /apps/fitnesse && mkdir /apps/fitnesse/logs && mkdir /apps/fitnesse/scripts/
+	
+	-- create a fitness user and group
+	groupadd fitnesse
+	
+	useradd -M -s /bin/bash -G fitnesse -d /apps/fitnesse fitnesse_user
+	--Add your current login user to fitness group 
+	————sudo usermod -a -G fitnesse {your user account}
+	#logout... log back in to get group settings
+	
+	chown -R root:fitnesse /apps/fitnesse
+	-- Set file permissions
+	chmod -R u+rwx,g+rwx /apps/fitnesse
+	-- Remove all other permissions
+	chmod -R o-rwx  /apps/fitnesse
+
+     docker cp fitnesse-standalone.jar slave:/apps/fitnesse 
+     docker cp fitnesse.sh slave:/apps/fitnesse/scripts  
+	sudo chmod 755 /apps/fitnesse/scripts/fitnesse.sh
+	
+	docker cp fitnesse.service slave:/usr/lib/systemd/system/fitnesse.service
+	Sudo chmod 664 /etc/systemd/system/fitnesse.service
+	
+#Reboot startup
+Sudo systemctl enable fitnesse
+sudo systemctl daemon-reload
+
+git remote add origin git@github.com:rroehl/FitnesseContainer.git
+git branch -M main
+git push -u origin main

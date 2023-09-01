@@ -1,0 +1,103 @@
+ java -jar ${JENKINS_ROOT}/bin/agent.jar -help
+ -agentLog FILE                  : Local agent error log destination (overrides
+                                   workDir)
+ -auth user:pass                 : If your Jenkins is security-enabled, specify
+                                   a valid user name and password.
+ -cert VAL                       : Specify additional X.509 encoded PEM
+                                   certificates to trust when connecting to
+                                   Jenkins root URLs. If starting with @ then
+                                   the remainder is assumed to be the name of
+                                   the certificate file to read.
+ -connectTo HOST:PORT            : make a TCP connection to the given host and
+                                   port, then start communication.
+ -cp (-classpath) PATH           : add the given classpath elements to the
+                                   system classloader. (DEPRECATED)
+ -failIfWorkDirIsMissing         : Fails the initialization if the requested
+                                   workDir or internalDir are missing ('false'
+                                   by default) (default: false)
+ -help                           : Show this help message (default: true)
+ -internalDir VAL                : Specifies a name of the internal files
+                                   within a working directory ('remoting' by
+                                   default) (default: remoting)
+ -jar-cache DIR                  : Cache directory that stores jar files sent
+                                   from the controller
+ -jnlpCredentials USER:PASSWORD  : HTTP BASIC AUTH header to pass in for making
+                                   HTTP requests.
+ -jnlpUrl URL                    : instead of talking to the controller via
+                                   stdin/stdout, emulate a JNLP client by
+                                   making a TCP connection to the controller.
+                                   Connection parameters are obtained by
+                                   parsing the JNLP file.
+ -loggingConfig FILE             : Path to the property file with
+                                   java.util.logging settings
+ -noKeepAlive                    : Disable TCP socket keep alive on connection
+                                   to the controller. (default: false)
+ -noReconnect                    : Doesn't try to reconnect when a
+                                   communication fail, and exit instead
+                                   (default: false)
+ -proxyCredentials USER:PASSWORD : HTTP BASIC AUTH header to pass in for making
+                                   HTTP authenticated proxy requests.
+ -secret HEX_SECRET              : Agent connection secret to use instead of
+                                   -jnlpCredentials.
+ -tcp FILE                       : instead of talking to the controller via
+                                   stdin/stdout, listens to a random local
+                                   port, write that port number to the given
+                                   file, then wait for the controller to
+                                   connect to that port.
+ -text                           : encode communication with the controller
+                                   with base64. Useful for running agent over
+                                   8-bit unsafe protocol like telnet
+ -version                        : Shows the version of the remoting jar and
+                                   then exits (default: false)
+ -workDir FILE                   : Declares the working directory of the
+                                   remoting instance (stores cache and logs by
+                                   default)
+
+
+HOSTNAME=jenkins-agent
+SHLVL=1
+HOME=/apps/jenkins/jenkins_home
+JENKINS_JNLP_USERPW=agentuser:e8cf7e78ab1e3e06d7f4d45a68e0e3c82fa4df034432e2b16c0cfd10712c04c9
+JENKINS_AGENT_WORKDIR=/apps/jenkins/jenkins_home/agent
+JAVA_VERSION=jdk-11.0.15+10
+TERM=xterm
+PATH=/opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+JENKINS_URL=http://Venuss-MBP:8080
+LANG=en_US.UTF-8
+JENKINS_NAME=Linux_Agent
+JENKINS_ROOT=/apps/jenkins
+LC_ALL=en_US.UTF-8
+JAVA_HOME=/opt/java/openjdk
+PWD=/apps/jenkins/jenkins_home
+
+
+ $JAVA_BIN $JAVA_OPTIONS -jar ${JENKINS_ROOT}/bin/agent.jar $JNLP_URL $JNLP_USERPW $WORKDIR
+ $JAVA_HOME/bin/java
+
+ ${JAVA_HOME}/bin/java -jar ${JENKINS_ROOT}/bin/agent.jar  -jnlpUrl ${JENKINS_URL}computer/${NODE_NAME}/slave-agent.jnlp -secret ${JNLP_SECRET}
+
+/apps/jenkins/jenkins_home/agent
+
+java
+-jar
+/apps/jenkins/bin/agent.jar
+-jnlpUrl
+${JENKINS_URL}computer/${NODE_NAME}/slave-agent.jnlp
+-secret
+${JNLP_SECRET}
+
+ dockerrobb/jenkinsagent:latest
+
+
+ JENKINS_URL http://Venuss-MBP:8080
+
+
+agent.env file
+JENKINS_JNLP_USERPW=agentuser:e8cf7e78ab1e3e06d7f4d45a68e0e3c82fa4df034432e2b16c0cfd10712c04c9
+JENKINS_URL=http://Venuss-MBP:8080
+JENKINS_NAME=Linux_Agent
+JENKINS_SECRET={secret}
+
+docker run -it -d -t -h jenkins-agent --env-file agent.env --name jenkins-agent  jenkinsagent/fhlbsf:latest /bin/sh && docker exec -it jenkins-agent /bin/sh
+agent key
+

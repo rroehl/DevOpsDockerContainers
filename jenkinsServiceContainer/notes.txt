@@ -1,0 +1,332 @@
+Dockefile does this
+    copies these files to image 
+        jenkins-support ${jenkins_root}/scripts/jenkins-support
+        jenkins.sh ${jenkins_root}/scripts/jenkins.sh 
+        jenkins-plugin-cli ${jenkins_root}/scripts/jenkins-plugin-cli
+        install-plugins.sh ${jenkins_root}/scripts/install-plugins.sh
+    Then executes /sbin/tini ${jenkins_root}/scripts/jenkins.sh
+
+jenkins.sh does this:
+    find "${REF}" \( -type f -o -type l \) -exec bash -c '. ${jenkins_root}/scripts/jenkins-support; for arg; do copy_reference_file "$arg"; done' _ {} +
+    exec java -Duser.home="$JENKINS_HOME" ${FUTURE_OPTS} "${java_opts_array[@]}" -jar ${JENKINS_WAR} "${jenkins_opts_array[@]}" "$@"
+
+jenkins-support does this:  
+    It gets called by jenkins.sh but does not seem to run because of the find condition. Looks like it gets called by 
+    install-pluggins.sh
+
+Install-plugins.sh ${jenkins_root}/scripts/install-plugins.sh  (Deprciated) ---loads jenkins-support and says to use jenkins-plugin-cli
+
+jenkins-plugin-cli ${jenkins_root}/scripts/jenkins-plugin-cli - replaces Install-plugins.sh 
+
+jenkins-plugin-manager.jar ${jenkins_root}/bin/jenkins-plugin-manager.jar - DOCKERFILE downloads it and gets called from jenkins-plugin-cli
+
+
+
+To fix the problem, use the -s option or set the environment variable TINI_SUBREAPER to register Tini as a child subreaper, or run Tini as PID 1.
+ https://updates.jenkins.io/download/plugins/plain-credentials/1.8/plain-credentials.hpi
+
+https://www.jenkins.io/doc/book/managing/system-properties/#jenkins-security-apitokenproperty-admincangeneratenewtokens
+jenkins.security.ApiTokenProperty.showTokenToAdmins
+
+agent params
+-jnlpUrl
+-jnlpCredentials user:pass
+
+System.setProperty("jenkins.security.ApiTokenProperty.adminCanGenerateNewTokens", "true")
+System.setProperty("jenkins.security.ApiTokenProperty.adminCanGenerateNewTokens")
+System.setProperty("jenkins.install.SetupWizard.adminInitialApiToken", "11df0c64a2ddb3903632bd04857fc5f4bf")
+jenkins.security.ApiTokenProperty.adminCanGenerateNewTokens
+println(System.getProperty("jenkins.security.ApiTokenProperty.adminCanGenerateNewTokens"))
+println(System.getProperty("jenkins.install.SetupWizard.adminInitialApiToken"))
+
+
+
+
+import hudson.model.*
+import jenkins.model.*
+import jenkins.security.*
+import jenkins.security.apitoken.*
+
+// you can change the "admin" name
+// the false is to explicitely ask to not create a user who does not exist yet
+def user = User.get("agentuser", false)
+def prop = user.getProperty(ApiTokenProperty.class)
+// the name is up to you
+def result = prop.tokenStore.generateNewToken("token-created-by-script")
+user.save()
+
+return result.plainValue
+
+
+
+
+
+import jenkins.model.*
+import hudson.security.*
+import hudson.tasks.Mailer
+
+def instance = jenkins.model.Jenkins.instance
+def user = instance.securityRealm.createAccount("test11", "{password}")
+user.setFullName("Test User1")
+user.addProperty(new Mailer.UserProperty("test1@fhlbsf.com"));
+def strategy = (GlobalMatrixAuthorizationStrategy) instance.getAuthorizationStrategy()
+strategy.add(Jenkins.ADMINISTER, "test11")
+instance.setAuthorizationStrategy(strategy)
+instance.save()
+
+
+
+
+
+ sed -ir "s/^[#]*\s*password: password1/password: \"Rhr616\"/" jenkins.yaml
+
+
+jenkins.install.SetupWizard.adminInitialApiToken 
+jenkins.security.ApiTokenProperty.adminCanGenerateNewTokens
+
+ sed -ir "s/^[#]*\s*sonar.web.port=.*/sonar.web.port=9000/" sonar.properties
+
+#sed -ir "s/^[#]*\s*sonar.jdbc.username=.*/sonar.jdbc.username=SONARQUBE/" sonar.properties && \
+#sed -ir "s/^[#]*\s*sonar.jdbc.password=.*/sonar.jdbc.password={password}/" sonar.properties && \
+#sed -ir "0,/^[#]*\s*sonar.jdbc.url=.*/s//sonar.jdbc.url=jdbc:oracle:thin:@172.17.0.2:1521:XE/" sonar.properties && \
+#sed -ir "s/^[#]*\s*sonar.web.port=.*/sonar.web.port=9000/" sonar.properties
+sed -ir "s/wrapper.java.command=.*/wrapper.java.command=\/apps\/sonarqube-8.9.0.43852\/jdk-11.0.10\/bin\/java/" wrapper.conf
+
+sed -ir "0,/^[#]*\s*RUN_AS_USER=.*/s//RUN_AS_USER=jenkins/" sonar.sh
+
+
+sed -ir "s/^[#]*\s*processname=.*/processname=sonarqube/" run.sh && \
+sed -ir "s/^[#]*\s*fulllogpath=.*/fulllogpath=\/apps\/sonarqube-8.9.0.43852\/logs\/container.log/" run.sh && \
+sed -ir "s/^[#]*\s*fullstartscriptpath=.*/fullstartscriptpath=\/apps\/sonarqube-8.9.0.43852\/bin\/linux-x86-64\/sonar.sh/" run.sh 
+
+
+----List all plugins and versions
+def pluginList = new ArrayList(Jenkins.instance.pluginManager.plugins)
+pluginList.sort { it.getShortName() }.each{
+  plugin -> 
+    println ("${plugin.getShortName()}:${plugin.getVersion()}")
+}
+
+
+aws json file
+variable  jenkins_jnlp_user_password{
+    type        = string
+    default     = "agentuser:e8cf7e78ab1e3e06d7f4d45a68e0e3c82fa4df034432e2b16c0cfd10712c04c9"
+    description = "User ID and password used to connect to agent to service"
+    }
+
+jnlp_user_password  = var.jenkins_jnlp_user_password
+ service_url         = var.jenkins_service_url
+ jenkins_agent_name
+
+"environment": [
+        { "name" : "JENKINS_JNLP_USERPW", "value" : "${jnlp_user_password}" },
+        { "name" : "JENKINS_SERVICE_URL", "value" : "${service_url}" },
+        { "name" : "JENKINS_AGENT_NAME", "value" : "${agent_name}" }
+      ],
+
+plugins for jenkins version 2.346.2
+ace-editor:latest
+active-directory:latest
+amazon-ecs:latest
+ant:latest
+antisamy-markup-formatter:latest
+apache-httpcomponents-client-4-api:latest
+atlassian-bitbucket-server-integration:latest
+audit-trail:latest
+authentication-tokens:latest
+authorize-project:latest
+aws-credentials:latest
+bitbucket-pullrequest-builder:latest
+bitbucket:latest
+bootstrap4-api:latest
+bouncycastle-api:latest
+branch-api:latest
+build-blocker-plugin:latest
+build-name-setter:latest
+build-pipeline-plugin:latest
+build-timeout:latest
+built-on-column:latest
+caffeine-api:latest
+checks-api:latest
+cloudbees-bitbucket-branch-source:latest
+cloudbees-folder:latest
+command-launcher:latest
+conditional-buildstep:latest
+config-file-provider:latest
+configuration-as-code-groovy:latest
+configuration-as-code:latest
+configurationslicing:latest
+copyartifact:latest
+credentials-binding:latest
+credentials:1139.veb_9579fca_33b_
+dashboard-view:latest
+data-tables-api:latest
+dependency-check-jenkins-plugin:latest
+display-url-api:latest
+email-ext:latest
+emailext-template:latest
+embeddable-build-status:latest
+envinject-api:latest
+envinject:latest
+external-monitor-job:latest
+ez-templates:latest
+favorite:latest
+fitnesse:latest
+folder-auth:latest
+font-awesome-api:latest
+forensics-api:latest
+ghprb:latest
+git-client:latest
+git-parameter:latest
+git-server:latest
+git:latest
+github-api:latest
+github-branch-source:latest
+github:latest
+global-pre-script:latest
+greenballs:latest
+groovy:latest
+h2-api:latest
+handlebars:latest
+handy-uri-templates-2-api:latest
+htmlpublisher:latest
+ivy:latest
+jackson2-api:latest
+javadoc:latest
+jaxb:latest
+jdk-tool:latest
+jenkins-design-language:latest
+jenkins-multijob-plugin:latest
+jira:latest
+jjwt-api:latest
+job-dsl:latest
+jobConfigHistory:latest
+jquery-detached:latest
+jquery:latest
+jquery3-api:latest
+jsch:latest
+junit:latest
+ldap:latest
+localization-support:latest
+lockable-resources:latest
+mailer:latest
+managed-scripts:latest
+mapdb-api:latest
+mask-passwords:latest
+matrix-auth:latest
+matrix-project:latest
+maven-plugin:latest
+mercurial:latest
+momentjs:latest
+monitoring:latest
+msbuild:latest
+nant:latest
+next-build-number:latest
+nexus-artifact-uploader:latest
+node-iterator-api:latest
+nunit:latest
+okhttp-api:latest
+pam-auth:latest
+parameterized-trigger:latest
+pipeline-build-step:latest
+pipeline-github-lib:latest
+pipeline-graph-analysis:latest
+pipeline-input-step:latest
+pipeline-maven:latest
+pipeline-milestone-step:latest
+pipeline-model-api:latest
+pipeline-model-definition:latest
+pipeline-model-extensions:latest
+pipeline-rest-api:latest
+pipeline-stage-step:latest
+pipeline-stage-tags-metadata:latest
+pipeline-stage-view:latest
+pipeline-utility-steps:latest
+plain-credentials:latest
+plugin-usage-plugin:latest
+plugin-util-api:latest
+popper-api:latest
+powershell:latest
+project-inheritance:latest
+promoted-builds:latest
+publish-over-ssh:latest
+publish-over:latest
+pubsub-light:latest
+rake:latest
+rebuild:latest
+repository-connector:latest
+resource-disposer:latest
+role-strategy:latest
+run-condition-extras:latest
+run-condition:latest
+scm-api:latest
+script-security:latest
+simple-parameterized-builds-report:latest
+slack:latest
+snakeyaml-api:latest
+sonar:latest
+sse-gateway:latest
+ssh-agent:latest
+ssh-credentials:latest
+ssh-slaves:latest
+ssh:latest
+stash-pullrequest-builder:latest
+structs:latest
+terraform:latest
+throttle-concurrents:latest
+timestamper:latest
+token-macro:latest
+trilead-api:latest
+uno-choice:latest
+variant:latest
+visual-basic-6:latest
+vsphere-cloud:latest
+windows-slaves:latest
+workflow-aggregator:latest
+workflow-api:latest
+workflow-basic-steps:latest
+workflow-cps-global-lib:latest
+workflow-cps:latest
+workflow-durable-task-step:latest
+workflow-job:latest
+workflow-multibranch:latest
+workflow-scm-step:latest
+workflow-step-api:latest
+workflow-support:latest
+ws-cleanup:latest
+
+
+
+
+
+/*import hudson.tasks.Mailer */
+
+
+
+
+
+//**********DOCKER REMOTE CALLS
+
+socat -d TCP-LISTEN:2376,range=192.168.1.108/32,reuseaddr,fork UNIX:/var/run/docker.sock &     on the host
+socat -d TCP-LISTEN:2376,range=192.168.1.216/32,reuseaddr,fork UNIX:/var/run/docker.sock & 
+
+http://Venuss-MBP:2376   on the container
+http://robbs-MBP:2376 
+
+Docker host daemon config  
+
+  "builder": {
+    "gc": {
+      "defaultKeepStorage": "20GB",
+      "enabled": true
+    }
+  },
+  "insecure-registries":["Robbs-MBP:5000"],
+  "debug": true,
+  "experimental": false,
+  "hosts": [
+    "tcp://0.0.0.0:2375",
+    "unix:///var/run/docker.sock"
+  ]
+}

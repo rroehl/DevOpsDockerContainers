@@ -1,0 +1,13 @@
+[Unit]
+ Description=Fitnesse
+[Service]
+ Environment=FITNESSE_HOME=/apps/fitnesse
+ Type= forking
+ WorkingDirectory=/apps/fitnesse
+ RemainAfterExit=yes
+ ExecStart= /apps/fitnesse/scripts/fitnesse.sh start
+ ExecStop= /apps/fitnesse/scripts/fitnesse.sh stop
+ ExecReload= /apps/fitnesse/scripts/fitnesse.sh restart
+
+[Install]
+WantedBy= multi-user.target

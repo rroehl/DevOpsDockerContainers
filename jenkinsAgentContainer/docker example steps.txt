@@ -1,0 +1,51 @@
+docker build --rm -f Dockerfile  -t jenkinsagent/fhlbsf:latest .
+docker container stop   jenkins-agent && docker container rm  -v jenkins-agent
+
+#Docker Plugin version NEED TO USE THE mount commands
+docker run --name jenkins-agent --init jenkinsagent/fhlbsf:latest -url http://robbs-macbook-pro.local:8080 -workDir=/apps/jenkins/jenkins_home/agent 80ded7fad6699301a043c969f778f68db0a6d86b1876856af3c454101e151795 Linux_Agent
+docker run --name jenkins-agent --env-file agent.env  --init jenkinsagent/fhlbsf:latest   WHEN ITS DOES NOT ACCEPT VARIABLES entrypoint is ""
+
+socat -d TCP-LISTEN:2375,range=192.168.1.108/32,reuseaddr,fork UNIX:/var/run/docker.sock
+socat -d TCP-LISTEN:2375,range=10.31.210.73/32,reuseaddr,fork UNIX:/var/run/docker.sock
+
+A DOCKER volume
+docker volume rm agent_volume  && docker volume rm dot_jenkins_volume && docker volume create agent_volume  && docker volume create dot_jenkins_volume 
+docker volume rm service_volume
+
+NON Plugin -- This uses the agent user account to connect to the Jenkins service and make sure the env vars are set thru the file
+In master create Node Linux_Agent with Launch Method --Launch Agent by connecting it to the Controller
+Make sure to uncomment the stuff in the jenkins-agent shell file
+docker run -it -d -t -h jenkins-agent --mount source=agent_volume,target=/apps/jenkins/jenkins_home/agent --mount source=dot_jenkins_volume,target=/apps/jenkins/jenkins_home/.jenkins --env-file agent.env --name jenkins-agent  jenkinsagent/fhlbsf:latest && docker exec -it jenkins-agent /bin/sh
+docker container stop   jenkins-agent && docker container rm   jenkins-agent
+
+
+Push to docker marketplace
+docker login --username=dockerrobb 
+docker rmi dockerrobb/jenkinsagent:latest && docker tag jenkinsagent/fhlbsf:latest dockerrobb/jenkinsagent:latest && docker push dockerrobb/jenkinsagent:latest && docker rmi dockerrobb/jenkinsagent:latest
+
+Docker Plugin config
+Check both enables and expose the DOCKER_HOST
+Name: Docker
+Docker Host URI : tcp://Robbs-MBP:2375
+Docker API Version"v1.41
+
+Docker Agent templatesLabels: LinuxAgentLabel
+Name:LinuxAgentName
+Docker Image:dockerrobb/jenkinsagent
+credentials dockerrobb/******      ENABLE REGISTRY AUTHENTICATION
+Mounts: type=volume,source=agent_volume,target=/apps/jenkins/jenkins_home/agent    type=volume,source=dot_jenkins_volume,target=/apps/jenkins/jenkins_home/.jenkins
+Connect method  JNLP
+Jenkins URL http://Robbs-MBP:8080
+Internal Directory remoting
+
+Job 
+Restrict where this project can be run  LinuxAgentLabel
+Build shell .
+echo "Hello World"
+date >> date.txt
+cat date.txt 
+
+
+junk
+docker run -it -d -t -h jenkins-agent --env-file agent.env --name jenkins-agent  jenkinsagent/fhlbsf:latest /bin/sh && docker exec -it jenkins-agent /bin/sh
+

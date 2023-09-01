@@ -1,0 +1,103 @@
+credentials:
+  system:
+    domainCredentials:
+    - credentials:
+      - usernamePassword:
+          password: [docker_password]
+          scope: GLOBAL
+          username: "dockerrobb"
+
+jenkins:
+
+  agentProtocols:
+  - "JNLP4-connect"
+  - "Ping"
+
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        # create a user called admin
+        - id: "roehlr"
+          name: "Robb Roehl"
+          password: [admin_password]
+          properties:
+          - mailer:
+              emailAddress: "roehlr@fhlbsf.com"
+        - id: "jobrunner"
+          name: "Job Runner"
+          password: [job_password]
+          properties:
+          - mailer:
+              emailAddress: "jobrunner@fhlbsf.com"   
+        # Account used to connect agents to service without plugin
+        - id: "agentuser"
+          name: "Agent Account"
+          password: [agentuser_password]
+          properties:
+          - mailer:
+              emailAddress: "agentuser@fhlbsf.com"        
+
+  authorizationStrategy:
+    globalMatrix:
+      permissions:
+        - "Job/Build:jobrunner"
+        - "Job/Cancel:jobrunner"
+        - "Job/Read:jobrunner"
+        - "Job/Workspace:jobrunner"
+        - "Overall/Administer:roehlr"
+        - "Overall/Read:authenticated"
+        - "Run/Replay:jobrunner"
+        - "Run/Update:jobrunner"
+        - "Agent/Build:agentuser"
+        - "Agent/Configure:agentuser"
+        - "Agent/Connect:agentuser"
+        - "Agent/Create:agentuser"
+        - "Agent/Delete:agentuser"
+        - "Agent/Disconnect:agentuser"
+
+  labelAtoms:
+  - name: "[jenkins_agent_label]"
+  - name: "MasterLabel"
+  - name: "built-in"
+
+  clouds:
+  - docker:
+      dockerApi:
+        apiVersion: "v1.41"
+        connectTimeout: 60
+        dockerHost:
+          uri: [docker_uri]
+        readTimeout: 60
+      exposeDockerHost: true
+      name: "docker"
+      templates:
+      - connector:
+          jnlp:
+            jnlpLauncher:
+              workDirSettings:
+                disabled: false
+                failIfWorkDirIsMissing: false
+                internalDir: "remoting"
+        dockerTemplateBase:
+          cpuPeriod: 0
+          cpuQuota: 0
+          image: [docker_agent_image]
+          mounts:
+          - "[agent_home_mount]"
+          - "[agent_dot_jenkins_mount]"
+          mountsString: |-
+            [agent_home_mount]
+            [agent_dot_jenkins_mount]
+          pullCredentialsId:
+        labelString: "[jenkins_agent_label]"
+        name: "[jenkins_agent_name]"
+        pullStrategy: PULL_ALWAYS
+        pullTimeout: 300
+        remoteFs: [jenkins_agent_workdir]
+    
+
+unclassified:
+  location:
+    adminAddress: "address not configured yet <nobody@nowhere>"
+    url: [jenkins_url]

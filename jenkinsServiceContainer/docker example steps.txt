@@ -1,0 +1,82 @@
+cemtos
+docker build --rm -t jenkinsservice/fhlbsf:latest .
+docker run -p 8080:8080 -p 50000:50000 --restart=on-failure jenkinsservice/fhlbsf:latest
+
+docker run -it -d -t -h jenkins-service --name jenkins-service -p 8080:8080 -p 50000:50000 --cap-add=NET_ADMIN --privileged=true jenkinsservice/fhlbsf:latest /usr/sbin/init
+docker build ./ -t fitnesse:v1 
+docker exec -it jenkins-service /bin/bash 
+docker container stop   jenkins-service && docker container rm  -v jenkins-service
+
+alpine
+docker build --rm -t jenkinsservice/fhlbsf:latest .
+docker volume create service_volume
+docker volume rm service_volume
+docker volume rm service_volume && docker volume create service_volume
+docker run -it -d -t -h jenkins-service --name jenkins-service -p 8080:8080 -p 50000:50000  --mount source=service_volume,target=/apps/jenkins/jenkins_home jenkinsservice/fhlbsf:latest && docker exec -it jenkins-service /bin/sh 
+docker container stop   jenkins-service && docker container rm  jenkins-service
+docker container stop   jenkins-service && docker container rm  jenkins-service && docker volume rm service_volume && docker volume create service_volume
+
+
+docker tag 47c3f23fc14e dockerrobb/jenkinsagent:latest && docker push dockerrobb/jenkinsagent:latest && docker rmi dockerrobb/jenkinsagent:latest
+
+http://robbs-mbp:8080/manage/
+
+//**********DOCKER REMOTE CALLS
+socat -d TCP-LISTEN:2375,range=192.168.1.216/32,reuseaddr,fork UNIX:/var/run/docker.sock & 
+
+Docker engnin config
+{
+  "builder": {
+    "gc": {
+      "defaultKeepStorage": "20GB",
+      "enabled": true
+    }
+  },
+  "debug": true,
+  "experimental": false,
+  "features": {
+    "buildkit": true
+  },
+  "hosts": [
+    "tcp://0.0.0.0:2375",
+    "unix:///var/run/docker.sock"
+  ],
+  "insecure-registries": [
+     "Robbs-MBP:5000"
+  ]
+}
+
+http://robbs-MBP:2375 
+
+
+
+./scripts/jenkins-plugin-cli  --plugin-file /$REF/plugins.txt --plugin-download-directory $REF/plugins  --jenkins-version $JENKINS_VERSION --war /apps/jenkins/bin/jenkins.war --verbose
+
+
+docker run --rm --volumes-from jenkins-service busybox cp -R /apps/jenkins/jenkins_home /backup
+docker run --rm --volumes-from jenkins-service -v $(pwd):/backup busybox cp -R /apps/jenkins/jenkins_home /backup
+
+
+# -I Keep STDIN open even if not attached
+docker container start ec719537eacc 
+docker exec -it ec719537eacc /bin/bash
+docker container stop ec719537eacc 
+docker container rm 5fb12feda5c2
+
+docker run -d -t -h {name} -p 8080:80 --name {name} --cap-add=NET_ADMIN --privileged=true centos:centos7.9.2009 /usr/sbin/init
+docker run -it --name fitnesse -p 8080:80 fitnesse:v1
+
+docker exec -it fitnesse /bin/bash 
+
+docker container stop fitnesse
+docker container rm fitnesse
+
+# -h hostname -d run container in the background —cap-add add linux capabilities -t Allocate a pseudo-TTY
+Yum install http 
+
+ yum install net-tools
+Yum install wget
+
+
+docker container stop   jenkins-service && docker container rm  jenkins-service
+docker run -it -d -t -h tempjenkins-service --name tempjenkins-service -p 8080:8080 -p 50000:50000  --mount source=temp,target=/apps/jenkins/jenkins_home tempjenkinsservice/fhlbsf:latest /bin/sh && docker exec -it tempjenkins-service /bin/sh 

@@ -1,0 +1,84 @@
+# Sonaqube
+# Build image :     docker build -t "sonarqube:7.9.6" .
+# Build Container:  docker run -i -d -t -h sonarqube --name sonarqube -p 8081:9000  sonarqube:7.9.6 
+
+FROM centos:centos7.9.2009
+#Set ENV vars
+
+#Configure Server Host Limits
+#sysctl -w -q vm.max_map_count=262144 && \
+#sysctl -w -q fs.file-max=65536 && \
+#ulimit -n 65536 && \
+#ulimit -u 4096 
+
+RUN mkdir /apps
+
+# install unzip
+run yum install -y unzip
+
+# Install Sonarqube  wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-7.9.6.zip
+COPY sonarqube-7.9.6.zip /apps
+
+# Unzip the file and remove it
+RUN cd /apps && unzip sonarqube-7.9.6.zip && rm -f sonarqube-7.9.6.zip
+
+# Install JDK   https://www.oracle.com/java/technologies/javase-jdk11-downloads.html
+COPY jdk-11.0.10_linux-x64_bin.tar.gz /apps
+RUN cd /apps && tar -xvf jdk-11.0.10_linux-x64_bin.tar.gz && rm -f jdk-11.0.10_linux-x64_bin.tar.gz
+
+# Copy the JDBC driver into $SONARQUBE-HOME/extensions/jdbc-driver/oracle.  from https://www.oracle.com/database/technologies/appdev/jdbc-ucp-19c-downloads.html
+COPY ojdbc8.jar /apps/sonarqube-7.9.6/extensions/jdbc-driver/oracle
+
+#Copy the run.sh file to the sonarqube bin location
+COPY run.sh  /apps/sonarqube-7.9.6/bin/linux-x86-64
+
+# Configure the sonar.properties by uncommenting and adding the value
+#sonar.jdbc.username=  and  sonar.jdbc.password=  sonar.jdbc.url=  sonar.web.host= and sonar.web.port=
+RUN cd /apps/sonarqube-7.9.6/conf && \
+sed -ir "s/^[#]*\s*sonar.web.port=.*/sonar.web.port=9000/" sonar.properties
+
+#sed -ir "s/^[#]*\s*sonar.jdbc.username=.*/sonar.jdbc.username=SONARQUBE/" sonar.properties && \
+#sed -ir "s/^[#]*\s*sonar.jdbc.password=.*/sonar.jdbc.password={password}/" sonar.properties && \
+#sed -ir "0,/^[#]*\s*sonar.jdbc.url=.*/s//sonar.jdbc.url=jdbc:oracle:thin:@172.17.0.2:1521:XE/" sonar.properties && \
+#sed -ir "s/^[#]*\s*sonar.web.port=.*/sonar.web.port=9000/" sonar.properties
+
+# Add ldap configuration
+    # AD LDAP Configuration
+    # sonar.security.realm=LDAP
+    # ldap.url=ldap://awdw-ifaddc-001.fhlbsf-i.com:389
+    # ldap.bindDn=svcsys_aws-ad@fhlbsf-i.com
+    # ldap.bindPassword={password}
+    # ldap.user.baseDn=OU=FHLB-Accounts,DC=fhlbsf-i,DC=com
+    # ldap.user.request=(&(objectClass=user)(sAMAccountName={login}))
+    ##           (&(objectCategory=Person)(sAMAccountName=*))
+    # ldap.user.realNameAttribute=cn
+    # ldap.user.emailAttribute=mail
+    # ldap.group.baseDn=OU=Groups,OU=FHLB-Accounts,DC=fhlbsf-i,DC=com
+    # ldap.group.idAttribute=sAMAccountName
+
+# Configure the wrapper.conf Modify wrapper.conf with the correct java wrapper.java.command=/apps/jdk-11.0.10/bin/java does not remove the comment character
+RUN  cd /apps/sonarqube-7.9.6/conf && \
+sed -ir "s/wrapper.java.command=.*/wrapper.java.command=\/apps\/jdk-11.0.10\/bin\/java/" wrapper.conf
+
+# Configure the sonar.sh Uncomment and modify sonar.sh with the run as user  RUN_AS_USER=sonarqube_user , Only on the 1st occurance 
+RUN cd /apps/sonarqube-7.9.6/bin/linux-x86-64 && \
+sed -ir "0,/^[#]*\s*RUN_AS_USER=.*/s//RUN_AS_USER=sonarqube_user/" sonar.sh
+
+# Configure the run.sh  variables processname=  fulllogpath=   fullstartscriptpath=
+RUN cd /apps/sonarqube-7.9.6/bin/linux-x86-64  && \
+sed -ir "s/^[#]*\s*processname=.*/processname=sonarqube/" run.sh && \
+sed -ir "s/^[#]*\s*fulllogpath=.*/fulllogpath=\/apps\/sonarqube-7.9.6\/logs\/container.log/" run.sh && \
+sed -ir "s/^[#]*\s*fullstartscriptpath=.*/fullstartscriptpath=\/apps\/sonarqube-7.9.6\/bin\/linux-x86-64\/sonar.sh/" run.sh 
+
+# Configure the security
+RUN groupadd sonarqube && useradd -M -s /bin/bash -g sonarqube -d /app/sonar sonarqube_user && \
+cd /apps && \
+chown -R root:sonarqube ./ && \
+chmod  -R u+rwx,g+rwx ./  && \
+chmod -R o-rwx ./
+
+# Expose port 9000 on the container
+EXPOSE 9000
+
+#Comand to run on containter start
+CMD [ "/apps/sonarqube-7.9.6/bin/linux-x86-64/run.sh"]

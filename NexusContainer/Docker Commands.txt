@@ -1,0 +1,25 @@
+Systemd Build image :     docker build --rm -t "nexus:3.30.1-01" --file Dockerfile3.30.1 .
+Systemd run Container:  docker run -i -d -t -h nexus3.30.1 --name nexus3.30.1 --cap-add=NET_ADMIN --privileged=true -p 8081:9000  nexus:3.30.1-01 /usr/sbin/init
+docker build --rm -t local/c7-systemd .
+ docker build ./ -t fitnesse:v1 
+
+docker run -it --name {instance name} centos:centos7.9.2009 /bin/bash
+# -I Keep STDIN open even if not attached
+docker container start ec719537eacc 
+docker exec -it ec719537eacc /bin/bash
+docker container stop ec719537eacc 
+docker container rm 5fb12feda5c2
+
+docker run -d -t -h {name} -p 8080:80 --name {name} --cap-add=NET_ADMIN --privileged=true centos:centos7.9.2009 /usr/sbin/init
+docker run -it --name fitnesse -p 8080:80 fitnesse:v1
+
+docker exec -it nexus3.30.1 /bin/bash 
+
+docker container stop fitnesse
+docker container rm fitnesse
+
+# -h hostname -d run container in the background —cap-add add linux capabilities -t Allocate a pseudo-TTY
+Yum install http 
+
+ yum install net-tools
+Yum install wget

@@ -1,0 +1,15 @@
+[Unit]
+Description=SonarQube Service
+
+[Service]
+LimitNPROC=65535
+LimitNOFILE=65535
+Type= forking
+WorkingDirectory=/apps/sonarqube-8.9.0.43852
+RemainAfterExit=yes
+ExecStart=/apps/sonarqube-8.9.0.43852/bin/linux-x86-64/sonar.sh start
+ExecStop=/apps/sonarqube-8.9.0.43852/bin/linux-x86-64/sonar.sh stop
+ExecReload=/apps/sonarqube-8.9.0.43852/bin/linux-x86-64/sonar.sh restart
+
+[Install]
+WantedBy= multi-user.target

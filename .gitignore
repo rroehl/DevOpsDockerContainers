@@ -1,0 +1,11 @@
+*.tfstate
+*.pem
+*.hcl
+*.zip
+*.jar
+*.tar.gz
+*.pwd
+.terraform
+.DS_Store
+*.backup
+*.com
